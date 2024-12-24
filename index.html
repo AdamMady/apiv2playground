@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PenguinAI Enhanced Interface</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* RESET / BASE */
+    * {
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0;
+    }
+    html, body {
+      height: 100%;
+      font-family: Arial, sans-serif;
+      background-color: #000000; /* Dark background */
+      color: #ffffff;           /* Light text */
+      overflow: hidden;         /* We'll handle scrolling in content areas */
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #222222;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #555555;
+      border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #777777;
+    }
+
+    /*******************************************
+     * SETTINGS BUTTON
+     *******************************************/
+    .settings-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: #404040; /* Distinct color from tabs */
+      color: #ffffff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      z-index: 999;
+      transition: background-color 0.2s;
+    }
+    .settings-btn:hover {
+      background-color: #525252;
+    }
+
+    /*******************************************
+     * SETTINGS DRAWER
+     *******************************************/
+    .settings-drawer {
+      position: absolute;
+      top: 50px;
+      right: 10px;
+      width: 250px;
+      background-color: #111111;
+      border: 2px solid #222222;
+      border-radius: 6px;
+      padding: 10px;
+      display: none;
+      z-index: 1000;
+      animation: fadeIn 0.3s forwards;
+    }
+    .settings-drawer.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .settings-drawer h3 {
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+    }
+    .settings-drawer label {
+      display: block;
+      margin: 10px 0 5px 0;
+    }
+    .settings-drawer select, 
+    .settings-drawer button, 
+    .settings-drawer input[type="file"] {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 8px;
+      background-color: #444444;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .settings-drawer select:hover, 
+    .settings-drawer button:hover, 
+    .settings-drawer input[type="file"]:hover {
+      background-color: #555555;
+    }
+    .settings-drawer .checkbox-row {
+      display: flex; 
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    /*******************************************
+     * TABS
+     *******************************************/
+    .tabs {
+      display: flex;
+      background-color: #111111;
+      border-bottom: 2px solid #222222;
+    }
+    .tab {
+      flex: 1;
+      padding: 15px;
+      text-align: center;
+      cursor: pointer;
+      color: #aaaaaa;
+      transition: background-color 0.2s, color 0.2s;
+      user-select: none;
+    }
+    .tab:hover {
+      background-color: #222222;
+    }
+    .tab.active {
+      background-color: #222222;
+      color: #ffffff;
+      font-weight: bold;
+    }
+
+    /* Smooth tab transitions */
+    .tab-content {
+      display: none;
+      animation: fadeTab 0.3s;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    @keyframes fadeTab {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /*******************************************
+     * MAIN CONTENT
+     *******************************************/
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /*******************************************
+     * FOOTERS
+     *******************************************/
+    .footer {
+      display: flex;
+      align-items: center; /* Center vertically */
+      gap: 10px;
+      background-color: #111111;
+      border-top: 2px solid #222222;
+      padding: 10px;
+    }
+    .footer textarea {
+      flex: 1;
+      background-color: #333333;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      padding: 8px;
+      resize: none;
+      max-height: 100px;
+      overflow-y: auto;
+      line-height: 1.3;
+    }
+    .footer button {
+      background-color: #333333;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      white-space: nowrap;
+    }
+    .footer button:hover {
+      background-color: #444444;
+    }
+    .footer button:disabled {
+      background-color: #555555;
+      cursor: not-allowed;
+    }
+
+    /*******************************************
+     * CHAT LOG / MESSAGES
+     *******************************************/
+    .chat-log {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .chat-message {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .chat-message.user {
+      justify-content: flex-end; /* Align to right */
+    }
+    .chat-message.ai {
+      justify-content: flex-start; /* Align to left */
+    }
+    .chat-bubble {
+      max-width: 60%;
+      background-color: #222222;
+      border-radius: 8px;
+      padding: 10px;
+      word-wrap: break-word;
+      line-height: 1.4;
+      color: #ffffff;
+      position: relative;
+    }
+    .chat-message.user .chat-bubble {
+      background-color: #007bff;
+      color: #ffffff;
+    }
+    .chat-message.ai .chat-bubble {
+      background-color: #333333;
+      color: #ffffff;
+    }
+
+    /* EDIT/DELETE */
+    .edit-delete-container {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .edit-delete-btn {
+      background-color: #444444;
+      border: none;
+      color: #ffffff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .edit-delete-btn:hover {
+      background-color: #666666;
+    }
+    .chat-message.user .edit-delete-container {
+      margin-left: 10px; /* Position buttons to the right of user bubble */
+    }
+    .chat-message.ai .edit-delete-container {
+      margin-right: 10px; /* Position buttons to the left of assistant bubble */
+    }
+
+    /* CODE SNIPPETS */
+    pre {
+      background-color: #111111;
+      padding: 10px;
+      border-radius: 6px;
+      max-height: 200px;
+      overflow: auto;
+      color: #00ff00;
+      font-family: Consolas, monospace;
+      margin: 0;
+    }
+    pre code {
+      white-space: pre-wrap;
+    }
+    .snippet-controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 5px;
+    }
+    .snippet-btn {
+      background-color: #444444;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .snippet-btn:hover {
+      background-color: #666666;
+    }
+
+    .open-tab-btn {
+      background-color: #444444;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .open-tab-btn:hover {
+      background-color: #666666;
+    }
+
+    /*******************************************
+     * IMAGES
+     *******************************************/
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .image-grid img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      border: 2px solid #333333;
+    }
+    .image-grid img:hover {
+      transform: scale(1.03);
+    }
+
+    /*******************************************
+     * IMAGE MODAL
+     *******************************************/
+    .modal {
+      display: none; /* Hidden by default */
+      position: fixed;
+      z-index: 9999;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.8);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background-color: #111111;
+      padding: 20px;
+      border-radius: 8px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .modal-content img {
+      max-width: 90vw;
+      max-height: 80vh;
+    }
+    .close-modal {
+      position: absolute;
+      top: 10px; right: 10px;
+      background-color: transparent;
+      color: #ffffff;
+      font-size: 1.5rem;
+      border: none;
+      cursor: pointer;
+    }
+    .download-btn {
+      background-color: #555555;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      display: none; /* Hidden until image is loaded */
+    }
+    .download-btn.visible {
+      display: block;
+    }
+    .download-btn:hover {
+      background-color: #777777;
+    }
+
+    /*******************************************
+     * EDITING MESSAGES IN-LINE
+     *******************************************/
+    .edit-box {
+      background-color: #222222;
+      padding: 8px;
+      border-radius: 6px;
+      margin-top: 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .edit-box textarea {
+      width: 100%;
+      background-color: #333333;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      padding: 6px;
+      resize: none;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+    .edit-controls {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .edit-controls button {
+      background-color: #444444;
+      padding: 4px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #ffffff;
+    }
+    .edit-controls button:hover {
+      background-color: #666666;
+    }
+  </style>
+</head>
+<body>
+  <!-- SETTINGS BUTTON -->
+  <button class="settings-btn" id="settingsBtn">Settings</button>
+
+  <!-- SETTINGS DRAWER -->
+  <div class="settings-drawer" id="settingsDrawer">
+    <h3>Settings</h3>
+
+    <!-- Chat Model -->
+    <label for="chatModelSelect">Chat Model:</label>
+    <select id="chatModelSelect"></select>
+
+    <!-- Image Model -->
+    <label for="imageModelSelect">Image Model:</label>
+    <select id="imageModelSelect"></select>
+
+    <!-- Stream Toggle -->
+    <div class="checkbox-row">
+      <input type="checkbox" id="streamToggle" checked />
+      <label for="streamToggle" style="margin: 0;">Enable Streaming</label>
+    </div>
+
+    <!-- Import Chat -->
+    <label>Import Chat:</label>
+    <input type="file" id="importChatInput" accept=".json" />
+
+    <!-- Export Chat -->
+    <button id="exportChatBtnDrawer">Export Chat</button>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" data-tab="chat">Chat</div>
+    <div class="tab" data-tab="images">Images</div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+    <!-- Chat Tab -->
+    <div class="tab-content active" id="chatTab">
+      <div class="chat-log" id="chatLog"></div>
+    </div>
+
+    <!-- Images Tab -->
+    <div class="tab-content" id="imagesTab">
+      <h2>Generated Images</h2>
+      <div class="image-grid" id="imageResults"></div>
+    </div>
+  </div>
+
+  <!-- FOOTER (CHAT INPUT) -->
+  <div class="footer" id="chatFooter">
+    <textarea id="chatInput" placeholder="Type your message..."></textarea>
+    <button id="sendChatBtn">Send</button>
+    <button id="clearChatBtn">Clear Chat</button>
+  </div>
+
+  <!-- FOOTER (IMAGES INPUT) -->
+  <div class="footer" id="imagesFooter" style="display:none;">
+    <textarea id="imagePrompt" placeholder="Describe your image..."></textarea>
+    <button id="generateImageBtn">Generate</button>
+    <button id="clearImagesBtn">Clear Images</button>
+  </div>
+
+  <!-- MODAL (Enlarged Image) -->
+  <div class="modal" id="imageModal">
+    <div class="modal-content">
+      <button class="close-modal" id="closeModalBtn">&times;</button>
+      <img id="modalImage" src="" alt="enlarged" />
+      <button id="downloadImageBtn" class="download-btn">Download</button>
+    </div>
+  </div>
+
+  <script>
+    /******************************************
+     * CONSTANTS & STORAGE KEYS
+     ******************************************/
+    const CHAT_STORAGE_KEY = 'penguinAI_chat_history';
+    const IMAGE_STORAGE_KEY = 'penguinAI_images_history'; // For 4-hour image retention
+    const CHAT_MODEL_KEY = 'penguinAI_chat_model';
+    const IMAGE_MODEL_KEY = 'penguinAI_image_model';
+    const STREAM_ENABLED_KEY = 'penguinAI_stream_enabled';
+
+    const DEFAULT_CHAT_MODEL = 'claude-3.5-sonnet'; // If none saved
+    const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+
+    /******************************************
+     * GLOBAL VARIABLES
+     ******************************************/
+    let chatHistory = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY)) || [];
+    let imagesHistory = JSON.parse(localStorage.getItem(IMAGE_STORAGE_KEY)) || [];
+
+    /******************************************
+     * DOM ELEMENTS
+     ******************************************/
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsDrawer = document.getElementById('settingsDrawer');
+    const chatModelSelect = document.getElementById('chatModelSelect');
+    const imageModelSelect = document.getElementById('imageModelSelect');
+    const streamToggle = document.getElementById('streamToggle');
+    const importChatInput = document.getElementById('importChatInput');
+    const exportChatBtnDrawer = document.getElementById('exportChatBtnDrawer');
+
+    const tabs = document.querySelectorAll('.tab');
+    const chatTabContent = document.getElementById('chatTab');
+    const imagesTabContent = document.getElementById('imagesTab');
+    const chatFooter = document.getElementById('chatFooter');
+    const imagesFooter = document.getElementById('imagesFooter');
+
+    const chatLog = document.getElementById('chatLog');
+    const chatInput = document.getElementById('chatInput');
+    const sendChatBtn = document.getElementById('sendChatBtn');
+    const clearChatBtn = document.getElementById('clearChatBtn');
+
+    const imageResults = document.getElementById('imageResults');
+    const imagePrompt = document.getElementById('imagePrompt');
+    const generateImageBtn = document.getElementById('generateImageBtn');
+    const clearImagesBtn = document.getElementById('clearImagesBtn');
+
+    const imageModal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const downloadImageBtn = document.getElementById('downloadImageBtn');
+
+    /******************************************
+     * SETTINGS DRAWER
+     ******************************************/
+    let drawerOpen = false;
+    settingsBtn.addEventListener('click', () => {
+      drawerOpen = !drawerOpen;
+      settingsDrawer.classList.toggle('active', drawerOpen);
+    });
+
+    // Export Chat
+    exportChatBtnDrawer.addEventListener('click', () => {
+      if (!chatHistory.length) {
+        alert("No conversation to export!");
+        return;
+      }
+      exportChatHistory();
+    });
+
+    // Import Chat
+    importChatInput.addEventListener('change', handleImportChat);
+
+    function handleImportChat(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const imported = JSON.parse(event.target.result);
+          if (Array.isArray(imported)) {
+            chatHistory = imported;
+            localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatHistory));
+            renderChat();
+            alert("Chat imported successfully!");
+          } else {
+            alert("Invalid chat JSON. Must be an array of messages.");
+          }
+        } catch (err) {
+          alert("Failed to parse chat JSON.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    /******************************************
+     * TAB SWITCHING LOGIC
+     ******************************************/
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Deactivate all tabs and contents
+        tabs.forEach(t => t.classList.remove('active'));
+        chatTabContent.classList.remove('active');
+        imagesTabContent.classList.remove('active');
+        chatFooter.style.display = 'none';
+        imagesFooter.style.display = 'none';
+
+        // Activate the selected tab and its content
+        tab.classList.add('active');
+        const which = tab.getAttribute('data-tab');
+        if (which === 'chat') {
+          chatTabContent.classList.add('active');
+          chatFooter.style.display = 'flex';
+          setTimeout(scrollToBottom, 200); // Smooth scroll
+        } else {
+          imagesTabContent.classList.add('active');
+          imagesFooter.style.display = 'flex';
+        }
+      });
+    });
+
+    function scrollToBottom() {
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    /******************************************
+     * LOADING MODELS
+     ******************************************/
+    async function loadChatModels() {
+      try {
+        const resp = await fetch("https://api.penguinai.tech/v1/models");
+        if (!resp.ok) throw new Error("Chat model load failed.");
+        const data = await resp.json();
+        const chatModels = data.data.filter(m => m.type === "chat.completions");
+
+        chatModelSelect.innerHTML = "";
+        chatModels.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          opt.textContent = m.id;
+          chatModelSelect.appendChild(opt);
+        });
+
+        // Load saved chat model or default
+        let savedChatModel = localStorage.getItem(CHAT_MODEL_KEY);
+        if (savedChatModel && chatModels.some(c => c.id === savedChatModel)) {
+          chatModelSelect.value = savedChatModel;
+        } else {
+          // If saved model doesn't exist, set to default if available
+          const foundDefault = chatModels.find(c => c.id === DEFAULT_CHAT_MODEL);
+          if (foundDefault) {
+            chatModelSelect.value = DEFAULT_CHAT_MODEL;
+            localStorage.setItem(CHAT_MODEL_KEY, DEFAULT_CHAT_MODEL);
+          } else {
+            chatModelSelect.selectedIndex = 0;
+            localStorage.setItem(CHAT_MODEL_KEY, chatModelSelect.value);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        chatModelSelect.innerHTML = '<option value="Failed">Failed</option>';
+      }
+    }
+
+    async function loadImageModels() {
+      try {
+        const resp = await fetch("https://api.penguinai.tech/v1/models");
+        if (!resp.ok) throw new Error("Image model load failed.");
+        const data = await resp.json();
+        const imageModels = data.data.filter(m => m.type === "images.generations");
+
+        imageModelSelect.innerHTML = "";
+        imageModels.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          opt.textContent = m.id;
+          imageModelSelect.appendChild(opt);
+        });
+
+        // Load saved image model or default to first
+        let savedImageModel = localStorage.getItem(IMAGE_MODEL_KEY);
+        if (savedImageModel && imageModels.some(i => i.id === savedImageModel)) {
+          imageModelSelect.value = savedImageModel;
+        } else {
+          imageModelSelect.selectedIndex = 0;
+          localStorage.setItem(IMAGE_MODEL_KEY, imageModelSelect.value);
+        }
+      } catch (err) {
+        console.error(err);
+        imageModelSelect.innerHTML = '<option value="Failed">Failed</option>';
+      }
+    }
+
+    // Save user’s selection
+    chatModelSelect.addEventListener('change', () => {
+      localStorage.setItem(CHAT_MODEL_KEY, chatModelSelect.value);
+    });
+    imageModelSelect.addEventListener('change', () => {
+      localStorage.setItem(IMAGE_MODEL_KEY, imageModelSelect.value);
+    });
+    streamToggle.addEventListener('change', () => {
+      localStorage.setItem(STREAM_ENABLED_KEY, JSON.stringify(streamToggle.checked));
+    });
+
+    /******************************************
+     * INITIAL INIT
+     ******************************************/
+    async function init() {
+      await loadChatModels();
+      await loadImageModels();
+      loadStreamToggle();
+      cleanupExpiredImages();
+      renderImages();
+      renderChat();
+      scrollToBottom();
+    }
+    init();
+
+    function loadStreamToggle() {
+      const savedStreamState = JSON.parse(localStorage.getItem(STREAM_ENABLED_KEY));
+      if (savedStreamState !== null) {
+        streamToggle.checked = savedStreamState;
+      } else {
+        streamToggle.checked = true; // Default to enabled
+        localStorage.setItem(STREAM_ENABLED_KEY, JSON.stringify(true));
+      }
+    }
+
+    /******************************************
+     * CONVERSATION RENDER
+     ******************************************/
+    function renderChat() {
+      chatLog.innerHTML = "";
+
+      for (let i = 0; i < chatHistory.length; i++) {
+        const msg = chatHistory[i];
+        const msgDiv = document.createElement('div');
+        msgDiv.classList.add('chat-message');
+        msgDiv.classList.add(msg.role === 'user' ? 'user' : 'ai');
+
+        const bubble = document.createElement('div');
+        bubble.classList.add('chat-bubble');
+
+        // Parse Code Snippets
+        const parts = parseCodeSnippets(msg.content);
+        for (let part of parts) {
+          if (part.type === 'text') {
+            let p = document.createElement('p');
+            p.style.margin = '0';
+            p.style.padding = '0';
+            p.innerHTML = parseMarkdown(part.content);
+            bubble.appendChild(p);
+          } else if (part.type === 'code') {
+            let pre = document.createElement('pre');
+            let codeEl = document.createElement('code');
+            codeEl.textContent = part.content;
+            pre.appendChild(codeEl);
+
+            // Snippet controls
+            let snippetControls = document.createElement('div');
+            snippetControls.classList.add('snippet-controls');
+
+            // Copy
+            let copyBtn = document.createElement('button');
+            copyBtn.classList.add('snippet-btn');
+            copyBtn.textContent = 'Copy';
+            copyBtn.addEventListener('click', () => {
+              navigator.clipboard.writeText(part.content)
+                .then(() => {
+                  copyBtn.textContent = 'Copied!';
+                  setTimeout(() => copyBtn.textContent = 'Copy', 2000);
+                })
+                .catch(err => console.error("Clipboard error:", err));
+            });
+            snippetControls.appendChild(copyBtn);
+
+            // If HTML => open tab
+            if (detectLanguage(part.content) === 'html') {
+              let openTabBtn = document.createElement('button');
+              openTabBtn.classList.add('open-tab-btn');
+              openTabBtn.textContent = 'Open in New Tab';
+              openTabBtn.addEventListener('click', () => {
+                let newWin = window.open();
+                newWin.document.write(part.content);
+                newWin.document.close();
+              });
+              snippetControls.appendChild(openTabBtn);
+            }
+
+            bubble.appendChild(pre);
+            bubble.appendChild(snippetControls);
+          }
+        }
+
+        // Edit/Delete container
+        const edContainer = document.createElement('div');
+        edContainer.classList.add('edit-delete-container');
+
+        const editBtn = document.createElement('button');
+        editBtn.classList.add('edit-delete-btn');
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', () => openEditBox(i, bubble));
+
+        const delBtn = document.createElement('button');
+        delBtn.classList.add('edit-delete-btn');
+        delBtn.textContent = 'X';
+        delBtn.addEventListener('click', () => deleteMessage(i));
+
+        edContainer.appendChild(editBtn);
+        edContainer.appendChild(delBtn);
+
+        // Arrange based on role
+        if (msg.role === 'user') {
+          // User messages: Bubble first, then buttons (aligned right)
+          msgDiv.appendChild(bubble);
+          msgDiv.appendChild(edContainer);
+        } else {
+          // Assistant messages: Buttons first, then bubble (aligned left)
+          msgDiv.appendChild(edContainer);
+          msgDiv.appendChild(bubble);
+        }
+
+        chatLog.appendChild(msgDiv);
+      }
+    }
+
+    function openEditBox(index, bubbleEl) {
+      // If there's an existing edit box, remove it first
+      const existingBox = bubbleEl.querySelector('.edit-box');
+      if (existingBox) {
+        bubbleEl.removeChild(existingBox);
+        return;
+      }
+
+      // Create an edit box
+      const editBox = document.createElement('div');
+      editBox.classList.add('edit-box');
+
+      const ta = document.createElement('textarea');
+      ta.value = chatHistory[index].content;
+
+      const ctrl = document.createElement('div');
+      ctrl.classList.add('edit-controls');
+
+      const confirmBtn = document.createElement('button');
+      confirmBtn.textContent = 'Confirm';
+      confirmBtn.addEventListener('click', () => {
+        const newContent = ta.value.trim();
+        if (newContent) {
+          chatHistory[index].content = newContent;
+          localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatHistory));
+          renderChat();
+        } else {
+          alert("Message cannot be empty.");
+        }
+      });
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.addEventListener('click', () => {
+        // remove the edit box
+        bubbleEl.removeChild(editBox);
+      });
+
+      ctrl.appendChild(confirmBtn);
+      ctrl.appendChild(cancelBtn);
+
+      editBox.appendChild(ta);
+      editBox.appendChild(ctrl);
+
+      bubbleEl.appendChild(editBox);
+    }
+
+    function deleteMessage(index) {
+      if (true) {
+        chatHistory.splice(index, 1);
+        localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatHistory));
+        renderChat();
+      }
+    }
+
+    /******************************************
+     * PARSE MARKDOWN / CODE
+     ******************************************/
+    function parseMarkdown(text) {
+      if (!text || typeof text !== 'string') return '';
+
+      // # Heading
+      text = text.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+      text = text.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+      text = text.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+      // Bold
+      text = text.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
+
+      // Lists
+      text = text.replace(/^\d+\.\s+(.*)/gm, '<li>$1</li>');
+      text = text.replace(/<\/li>\n<li>/g, '</li><li>');
+      text = text.replace(/<li>(.*?)<\/li>/gim, '<ol><li>$1</li></ol>');
+
+      return text.trim();
+    }
+
+    function detectLanguage(code) {
+      const firstLine = code.trim().split('\n')[0].toLowerCase();
+      if (firstLine.includes('html') || firstLine.includes('<!doctype html>')) {
+        return 'html';
+      }
+      return 'code';
+    }
+
+    function parseCodeSnippets(text) {
+      const re = /```([\s\S]*?)```/g;
+      let match;
+      let lastIndex = 0;
+      const parts = [];
+
+      while ((match = re.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+          let normal = text.slice(lastIndex, match.index);
+          parts.push({ type: 'text', content: normal });
+        }
+        parts.push({ type: 'code', content: match[1] });
+        lastIndex = re.lastIndex;
+      }
+      if (lastIndex < text.length) {
+        parts.push({ type: 'text', content: text.slice(lastIndex) });
+      }
+      return parts;
+    }
+
+    /******************************************
+     * CHAT SENDING / STREAMING
+     ******************************************/
+    let canSendChat = true;
+    let chatCooldownInterval = null;
+    const CHAT_COOLDOWN_SECONDS = 5;
+
+    sendChatBtn.addEventListener('click', sendChatMessage);
+    clearChatBtn.addEventListener('click', clearChatHistory);
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChatMessage();
+      }
+    });
+
+    function clearChatHistory() {
+      if (confirm("Are you sure you want to clear the chat history?")) {
+        chatHistory = [];
+        localStorage.removeItem(CHAT_STORAGE_KEY);
+        renderChat();
+      }
+    }
+
+    async function sendChatMessage() {
+      if (!canSendChat) return;
+      const text = chatInput.value.trim();
+      if (!text) return;
+
+      addChat('user', text);
+      chatInput.value = '';
+      startChatCooldown();
+
+      // Determine if streaming is enabled
+      const useStream = streamToggle.checked;
+
+      try {
+        const model = chatModelSelect.value;
+        if (useStream) {
+          await fetchChatStreaming(model);
+        } else {
+          await fetchChatNoStream(model);
+        }
+      } catch (err) {
+        addChat('ai', "Failed to get response.");
+        console.error(err);
+      }
+    }
+
+    function startChatCooldown() {
+      canSendChat = false;
+      let remaining = CHAT_COOLDOWN_SECONDS;
+      updateSendBtn(remaining);
+      chatCooldownInterval = setInterval(() => {
+        remaining--;
+        updateSendBtn(remaining);
+        if (remaining <= 0) {
+          clearInterval(chatCooldownInterval);
+          canSendChat = true;
+          updateSendBtn();
+        }
+      }, 1000);
+    }
+
+    function updateSendBtn(remaining) {
+      if (!canSendChat) {
+        sendChatBtn.disabled = true;
+        sendChatBtn.textContent = `Send (${remaining}s)`;
+      } else {
+        sendChatBtn.disabled = false;
+        sendChatBtn.textContent = "Send";
+      }
+    }
+
+    function addChat(role, text) {
+      chatHistory.push({ role, content: text });
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatHistory));
+      renderChat();
+      scrollToBottom();
+    }
+
+    async function fetchChatNoStream(model) {
+      // Build the entire conversation
+      const messages = chatHistory.map(m => ({
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: m.content,
+      }));
+
+      const resp = await fetch('https://api.penguinai.tech/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          stream: false,
+          messages,
+        })
+      });
+      if (!resp.ok) throw new Error("Chat request failed.");
+      const data = await resp.json();
+      const content = data.choices?.[0]?.message?.content || "[No response]";
+      addChat('ai', content);
+    }
+
+    async function fetchChatStreaming(model) {
+      // Build the entire conversation
+      const messages = chatHistory.map(m => ({
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: m.content,
+      }));
+
+      // Add an empty AI message to receive the stream
+      addChat('ai', ""); 
+      const aiIndex = chatHistory.length - 1;
+
+      const resp = await fetch('https://api.penguinai.tech/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          stream: true,
+          messages
+        })
+      });
+      if (!resp.ok) throw new Error("Chat streaming request failed.");
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let partial = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+        for (let line of lines) {
+          line = line.trim();
+          if (!line) continue;
+          if (line === "data: [DONE]" || line === "[DONE]") return;
+
+          if (line.startsWith('data: ')) {
+            line = line.slice(6).trim();
+          }
+          try {
+            const json = JSON.parse(line);
+            const token = json.choices?.[0]?.delta?.content;
+            if (token) {
+              partial += token;
+              chatHistory[aiIndex].content = partial;
+              localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatHistory));
+              renderChat();
+            }
+            if (json.choices?.[0]?.finish_reason === 'stop') return;
+          } catch (err) {
+            // Possibly partial / non-JSON chunk
+          }
+        }
+      }
+    }
+
+    /******************************************
+     * IMAGE HANDLING
+     ******************************************/
+    let canGenerateImage = true;
+    let imageCooldownInterval = null;
+    const IMAGE_COOLDOWN_SECONDS = 5;
+
+    generateImageBtn.addEventListener('click', generateImage);
+    clearImagesBtn.addEventListener('click', clearImages);
+
+    function clearImages() {
+      if (confirm("Are you sure you want to clear all generated images?")) {
+        imagesHistory = [];
+        localStorage.removeItem(IMAGE_STORAGE_KEY);
+        renderImages();
+      }
+    }
+
+    function renderImages() {
+      imageResults.innerHTML = "";
+      cleanupExpiredImages(); // Remove images older than 4 hours
+      imagesHistory.forEach(img => {
+        const imgEl = document.createElement('img');
+        imgEl.src = img.url;
+        imgEl.alt = img.prompt;
+        imgEl.addEventListener('click', () => openModal(img.url));
+        imageResults.appendChild(imgEl);
+      });
+    }
+
+    function cleanupExpiredImages() {
+      const now = Date.now();
+      imagesHistory = imagesHistory.filter(img => (now - img.timestamp) < FOUR_HOURS_MS);
+      localStorage.setItem(IMAGE_STORAGE_KEY, JSON.stringify(imagesHistory));
+    }
+
+    async function generateImage() {
+      if (!canGenerateImage) return;
+      let prompt = imagePrompt.value.trim();
+      if (!prompt) {
+        alert("Please enter a prompt to generate an image.");
+        return;
+      }
+
+      startImageCooldown();
+      generateImageBtn.textContent = "Generating...";
+
+      const model = imageModelSelect.value;
+      try {
+        const resp = await fetch("https://api.penguinai.tech/v1/images/generations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ model, prompt })
+        });
+        if (!resp.ok) throw new Error("Image request failed.");
+        const data = await resp.json();
+        const url = data.data?.[0]?.url;
+        if (!url) throw new Error("No image URL returned.");
+
+        imagesHistory.push({
+          url,
+          prompt,
+          timestamp: Date.now() // Store creation time for 4-hour expiry
+        });
+        localStorage.setItem(IMAGE_STORAGE_KEY, JSON.stringify(imagesHistory));
+        renderImages();
+      } catch (err) {
+        console.error(err);
+        alert("Failed to generate image. Please try again.");
+      } finally {
+        generateImageBtn.textContent = "Generate";
+      }
+    }
+
+    function startImageCooldown() {
+      canGenerateImage = false;
+      let remaining = IMAGE_COOLDOWN_SECONDS;
+      updateGenerateBtn(remaining);
+      imageCooldownInterval = setInterval(() => {
+        remaining--;
+        updateGenerateBtn(remaining);
+        if (remaining <= 0) {
+          clearInterval(imageCooldownInterval);
+          canGenerateImage = true;
+          updateGenerateBtn();
+        }
+      }, 1000);
+    }
+
+    function updateGenerateBtn(remaining) {
+      if (!canGenerateImage) {
+        generateImageBtn.disabled = true;
+        generateImageBtn.textContent = `Generate (${remaining}s)`;
+      } else {
+        generateImageBtn.disabled = false;
+        generateImageBtn.textContent = "Generate";
+      }
+    }
+
+    /******************************************
+     * MODAL
+     *******************************************/
+    function openModal(src) {
+      if (!src) return;
+      modalImage.src = src;
+      imageModal.style.display = 'flex';
+      downloadImageBtn.classList.add('visible');
+    }
+    function closeModal() {
+      imageModal.style.display = 'none';
+      modalImage.src = '';
+      downloadImageBtn.classList.remove('visible');
+    }
+    closeModalBtn.addEventListener('click', closeModal);
+    window.addEventListener('click', (e) => {
+      if (e.target === imageModal) closeModal();
+    });
+    downloadImageBtn.addEventListener('click', () => {
+      if (!modalImage.src) return;
+      const a = document.createElement('a');
+      a.href = modalImage.src;
+      a.download = 'generated_image.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+
+    /******************************************
+     * EXPORT / IMPORT HELPERS
+     *******************************************/
+    function exportChatHistory() {
+      const dataStr = JSON.stringify(chatHistory, null, 2);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "chat_history.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
