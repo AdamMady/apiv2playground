@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>PenguinAI Enhanced Interface</title>
+  <title>PenguinAI Playground</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     /* RESET / BASE */
@@ -672,30 +672,34 @@
       try {
         const resp = await fetch("https://api.penguinai.tech/v1/models");
         if (!resp.ok) throw new Error("Image model load failed.");
-        const data = await resp.json();
-        const imageModels = data.data.filter(m => m.type === "images.generations");
+      const data = await resp.json();
+    const imageModels = data.data.filter(m => m.type === "images.generations");
 
-        imageModelSelect.innerHTML = "";
-        imageModels.forEach(m => {
-          const opt = document.createElement('option');
-          opt.value = m.id;
-          opt.textContent = m.id;
-          imageModelSelect.appendChild(opt);
-        });
+    imageModelSelect.innerHTML = "";
+    imageModels.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.id;
+      imageModelSelect.appendChild(opt);
+    });
 
-        // Load saved image model or default to first
-        let savedImageModel = localStorage.getItem(IMAGE_MODEL_KEY);
-        if (savedImageModel && imageModels.some(i => i.id === savedImageModel)) {
-          imageModelSelect.value = savedImageModel;
-        } else {
-          imageModelSelect.selectedIndex = 0;
-          localStorage.setItem(IMAGE_MODEL_KEY, imageModelSelect.value);
-        }
-      } catch (err) {
-        console.error(err);
-        imageModelSelect.innerHTML = '<option value="Failed">Failed</option>';
-      }
+    // Check if 'flux' is available
+    let defaultImageModel = imageModels.find(i => i.id === "flux")?.id || imageModels[0]?.id;
+
+    // Load saved image model or default
+    let savedImageModel = localStorage.getItem(IMAGE_MODEL_KEY);
+    if (savedImageModel && imageModels.some(i => i.id === savedImageModel)) {
+      imageModelSelect.value = savedImageModel;
+    } else if (defaultImageModel) {
+      imageModelSelect.value = defaultImageModel;
+      localStorage.setItem(IMAGE_MODEL_KEY, defaultImageModel);
     }
+  } catch (err) {
+    console.error(err);
+    imageModelSelect.innerHTML = '<option value="Failed">Failed</option>';
+  }
+}
+
 
     // Save user’s selection
     chatModelSelect.addEventListener('change', () => {
