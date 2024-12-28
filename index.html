@@ -1,14 +1,16 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>PenguinAI Playground</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
   <style>
-    /* RESET / BASE */
+    /*******************************************
+     * BASE & RESET
+     *******************************************/
     * {
-      box-sizing: border-box; 
-      margin: 0; 
+      box-sizing: border-box;
+      margin: 0;
       padding: 0;
     }
     html, body {
@@ -16,7 +18,6 @@
       font-family: Arial, sans-serif;
       background-color: #000000; /* Dark background */
       color: #ffffff;           /* Light text */
-      overflow: hidden;         /* We'll handle scrolling in content areas */
     }
     body {
       display: flex;
@@ -24,7 +25,7 @@
       position: relative;
     }
 
-    /* SCROLLBAR */
+    /* Scrollbar styles (optional) */
     ::-webkit-scrollbar {
       width: 10px;
     }
@@ -46,7 +47,7 @@
       position: absolute;
       top: 10px;
       right: 10px;
-      background-color: #404040; /* Distinct color from tabs */
+      background-color: #404040;
       color: #ffffff;
       border: none;
       padding: 8px 12px;
@@ -109,10 +110,28 @@
       background-color: #555555;
     }
     .settings-drawer .checkbox-row {
-      display: flex; 
+      display: flex;
       align-items: center;
       gap: 8px;
       margin-bottom: 10px;
+    }
+
+    /* NEW: Add a close button inside the drawer */
+    .close-settings-btn {
+      display: none; /* Hidden on desktop */
+      background-color: transparent;
+      border: none;
+      color: #ffffff;
+      font-size: 1.2rem;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      cursor: pointer;
+      z-index: 1001; /* Above the drawer content */
+    }
+    .close-settings-btn:hover {
+      background-color: #222222;
+      border-radius: 50%;
     }
 
     /*******************************************
@@ -140,8 +159,6 @@
       color: #ffffff;
       font-weight: bold;
     }
-
-    /* Smooth tab transitions */
     .tab-content {
       display: none;
       animation: fadeTab 0.3s;
@@ -152,6 +169,25 @@
     @keyframes fadeTab {
       from { opacity: 0; }
       to { opacity: 1; }
+    }
+
+    /* Dropdown for mobile tabs */
+    #tabDropdown {
+      display: none; /* Hidden by default (desktop) */
+      width: 100%;
+      padding: 10px;
+      background-color: #111111;
+      color: #ffffff;
+      border: 2px solid #222222;
+      border-radius: 0;
+      appearance: none;
+      -webkit-appearance: none; /* Remove default arrow in some browsers */
+      -moz-appearance: none;
+      background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path fill="%23ffffff" d="M6 8.4L2.4 4.8 3.6 3.6 6 6l2.4-2.4 1.2 1.2z"/></svg>');
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 12px;
+      cursor: pointer;
     }
 
     /*******************************************
@@ -167,11 +203,11 @@
     }
 
     /*******************************************
-     * FOOTERS
+     * FOOTERS (CHAT & IMAGES INPUT)
      *******************************************/
     .footer {
       display: flex;
-      align-items: center; /* Center vertically */
+      align-items: center;
       gap: 10px;
       background-color: #111111;
       border-top: 2px solid #222222;
@@ -221,10 +257,10 @@
       margin-bottom: 10px;
     }
     .chat-message.user {
-      justify-content: flex-end; /* Align to right */
+      justify-content: flex-end; /* Align user messages to right */
     }
     .chat-message.ai {
-      justify-content: flex-start; /* Align to left */
+      justify-content: flex-start; /* Align AI messages to left */
     }
     .chat-bubble {
       max-width: 60%;
@@ -265,13 +301,15 @@
       background-color: #666666;
     }
     .chat-message.user .edit-delete-container {
-      margin-left: 10px; /* Position buttons to the right of user bubble */
+      margin-left: 10px;
     }
     .chat-message.ai .edit-delete-container {
-      margin-right: 10px; /* Position buttons to the left of assistant bubble */
+      margin-right: 10px;
     }
 
-    /* CODE SNIPPETS */
+    /*******************************************
+     * CODE SNIPPETS
+     *******************************************/
     pre {
       background-color: #111111;
       padding: 10px;
@@ -290,7 +328,7 @@
       gap: 8px;
       margin-top: 5px;
     }
-    .snippet-btn {
+    .snippet-btn, .open-tab-btn {
       background-color: #444444;
       color: #ffffff;
       border: none;
@@ -300,21 +338,7 @@
       cursor: pointer;
       transition: background-color 0.2s;
     }
-    .snippet-btn:hover {
-      background-color: #666666;
-    }
-
-    .open-tab-btn {
-      background-color: #444444;
-      color: #ffffff;
-      border: none;
-      border-radius: 4px;
-      padding: 4px 8px;
-      font-size: 0.8rem;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    .open-tab-btn:hover {
+    .snippet-btn:hover, .open-tab-btn:hover {
       background-color: #666666;
     }
 
@@ -345,8 +369,10 @@
       display: none; /* Hidden by default */
       position: fixed;
       z-index: 9999;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+      top: 0; 
+      left: 0;
+      width: 100%; 
+      height: 100%;
       background-color: rgba(0,0,0,0.8);
       align-items: center;
       justify-content: center;
@@ -367,7 +393,8 @@
     }
     .close-modal {
       position: absolute;
-      top: 10px; right: 10px;
+      top: 10px; 
+      right: 10px;
       background-color: transparent;
       color: #ffffff;
       font-size: 1.5rem;
@@ -392,7 +419,7 @@
     }
 
     /*******************************************
-     * EDITING MESSAGES IN-LINE
+     * EDITING MESSAGES IN-LINE (DESKTOP-ONLY)
      *******************************************/
     .edit-box {
       background-color: #222222;
@@ -430,14 +457,88 @@
     .edit-controls button:hover {
       background-color: #666666;
     }
+
+    /*******************************************
+     * MOBILE-FIRST & RESPONSIVE
+     *******************************************/
+    @media (max-width: 480px) {
+      /* Hide the horizontal .tabs on mobile */
+      .tabs {
+        display: none;
+      }
+
+      /* Display the mobile-friendly dropdown */
+      #tabDropdown {
+        display: block;
+      }
+
+      /* Make the chat bubbles span more width if desired */
+      .chat-bubble {
+        max-width: 80%;
+      }
+
+      /* Adjust footers to stack vertically */
+      .footer {
+        flex-direction: column;
+        gap: 8px;
+      }
+      .footer textarea {
+        width: 100%;
+        height: 60px;
+      }
+      .footer button {
+        width: 100%;
+        margin-top: 5px;
+      }
+
+      /* Reduce padding for the main content on mobile */
+      .main-content {
+        padding: 10px;
+      }
+
+      /* Image grid in one column on very small screens */
+      .image-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      /* Make settings drawer full-screen if open */
+      .settings-drawer {
+        width: 100%;
+        height: 100%;
+        top: 0;
+        right: 0;
+        border-radius: 0;
+        overflow-y: auto;
+      }
+
+      /* Adjust modal sizing on mobile */
+      .modal-content {
+        width: 90%;
+        height: 90%;
+      }
+      .modal-content img {
+        max-width: 100%;
+        max-height: 70vh;
+      }
+
+      /* SHOW the close button only on mobile */
+      .close-settings-btn {
+        display: block;
+      }
+    }
   </style>
 </head>
+
 <body>
   <!-- SETTINGS BUTTON -->
   <button class="settings-btn" id="settingsBtn">Settings</button>
 
   <!-- SETTINGS DRAWER -->
   <div class="settings-drawer" id="settingsDrawer">
+    <!-- CLOSE BUTTON INSIDE THE DRAWER (ONLY SHOW ON MOBILE) -->
+    <button class="close-settings-btn" id="closeSettingsBtn">&times;</button>
+    
     <h3>Settings</h3>
 
     <!-- Chat Model -->
@@ -462,11 +563,17 @@
     <button id="exportChatBtnDrawer">Export Chat</button>
   </div>
 
-  <!-- TABS -->
+  <!-- TABS (desktop) -->
   <div class="tabs">
     <div class="tab active" data-tab="chat">Chat</div>
     <div class="tab" data-tab="images">Images</div>
   </div>
+
+  <!-- Dropdown for Tabs (mobile) -->
+  <select id="tabDropdown">
+    <option value="chat" selected>Chat</option>
+    <option value="images">Images</option>
+  </select>
 
   <!-- MAIN CONTENT -->
   <div class="main-content">
@@ -507,20 +614,24 @@
 
   <script>
     /******************************************
+     * UTILITY: Detect if on mobile
+     ******************************************/
+    function isMobile() {
+      return window.matchMedia("(max-width: 480px)").matches;
+    }
+
+    /******************************************
      * CONSTANTS & STORAGE KEYS
      ******************************************/
     const CHAT_STORAGE_KEY = 'penguinAI_chat_history';
-    const IMAGE_STORAGE_KEY = 'penguinAI_images_history'; // For 4-hour image retention
+    const IMAGE_STORAGE_KEY = 'penguinAI_images_history'; 
     const CHAT_MODEL_KEY = 'penguinAI_chat_model';
     const IMAGE_MODEL_KEY = 'penguinAI_image_model';
     const STREAM_ENABLED_KEY = 'penguinAI_stream_enabled';
 
-    const DEFAULT_CHAT_MODEL = 'claude-3.5-sonnet'; // If none saved
+    const DEFAULT_CHAT_MODEL = 'claude-3.5-sonnet'; // Example default
     const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
 
-    /******************************************
-     * GLOBAL VARIABLES
-     ******************************************/
     let chatHistory = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY)) || [];
     let imagesHistory = JSON.parse(localStorage.getItem(IMAGE_STORAGE_KEY)) || [];
 
@@ -529,6 +640,7 @@
      ******************************************/
     const settingsBtn = document.getElementById('settingsBtn');
     const settingsDrawer = document.getElementById('settingsDrawer');
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn'); // New close button
     const chatModelSelect = document.getElementById('chatModelSelect');
     const imageModelSelect = document.getElementById('imageModelSelect');
     const streamToggle = document.getElementById('streamToggle');
@@ -536,6 +648,7 @@
     const exportChatBtnDrawer = document.getElementById('exportChatBtnDrawer');
 
     const tabs = document.querySelectorAll('.tab');
+    const tabDropdown = document.getElementById('tabDropdown');
     const chatTabContent = document.getElementById('chatTab');
     const imagesTabContent = document.getElementById('imagesTab');
     const chatFooter = document.getElementById('chatFooter');
@@ -557,12 +670,30 @@
     const downloadImageBtn = document.getElementById('downloadImageBtn');
 
     /******************************************
-     * SETTINGS DRAWER
+     * SETTINGS DRAWER & CLOSING LOGIC
      ******************************************/
     let drawerOpen = false;
+
     settingsBtn.addEventListener('click', () => {
       drawerOpen = !drawerOpen;
       settingsDrawer.classList.toggle('active', drawerOpen);
+    });
+
+    // Close via the new close button (only visible on mobile)
+    closeSettingsBtn.addEventListener('click', () => {
+      drawerOpen = false;
+      settingsDrawer.classList.remove('active');
+    });
+
+    // Close the settings drawer when clicking outside of it (desktop and mobile)
+    window.addEventListener('click', (event) => {
+      // If the settings drawer is open and the click is outside of it and not on the settings button
+      if (drawerOpen &&
+          !settingsDrawer.contains(event.target) &&
+          !settingsBtn.contains(event.target)) {
+        drawerOpen = false;
+        settingsDrawer.classList.remove('active');
+      }
     });
 
     // Export Chat
@@ -576,7 +707,6 @@
 
     // Import Chat
     importChatInput.addEventListener('change', handleImportChat);
-
     function handleImportChat(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -600,7 +730,7 @@
     }
 
     /******************************************
-     * TAB SWITCHING LOGIC
+     * TAB SWITCHING LOGIC - DESKTOP
      ******************************************/
     tabs.forEach(tab => {
       tab.addEventListener('click', () => {
@@ -617,7 +747,7 @@
         if (which === 'chat') {
           chatTabContent.classList.add('active');
           chatFooter.style.display = 'flex';
-          setTimeout(scrollToBottom, 200); // Smooth scroll
+          setTimeout(scrollToBottom, 200);
         } else {
           imagesTabContent.classList.add('active');
           imagesFooter.style.display = 'flex';
@@ -625,12 +755,34 @@
       });
     });
 
+    /******************************************
+     * TAB SWITCHING LOGIC - MOBILE (Dropdown)
+     ******************************************/
+    tabDropdown.addEventListener('change', (e) => {
+      const selectedTab = e.target.value;
+      // Deactivate all tabs and contents
+      tabs.forEach(t => t.classList.remove('active'));
+      chatTabContent.classList.remove('active');
+      imagesTabContent.classList.remove('active');
+      chatFooter.style.display = 'none';
+      imagesFooter.style.display = 'none';
+
+      if (selectedTab === 'chat') {
+        chatTabContent.classList.add('active');
+        chatFooter.style.display = 'flex';
+        setTimeout(scrollToBottom, 200);
+      } else if (selectedTab === 'images') {
+        imagesTabContent.classList.add('active');
+        imagesFooter.style.display = 'flex';
+      }
+    });
+
     function scrollToBottom() {
       chatLog.scrollTop = chatLog.scrollHeight;
     }
 
     /******************************************
-     * LOADING MODELS
+     * LOAD MODELS
      ******************************************/
     async function loadChatModels() {
       try {
@@ -647,12 +799,11 @@
           chatModelSelect.appendChild(opt);
         });
 
-        // Load saved chat model or default
+        // Load saved or default chat model
         let savedChatModel = localStorage.getItem(CHAT_MODEL_KEY);
         if (savedChatModel && chatModels.some(c => c.id === savedChatModel)) {
           chatModelSelect.value = savedChatModel;
         } else {
-          // If saved model doesn't exist, set to default if available
           const foundDefault = chatModels.find(c => c.id === DEFAULT_CHAT_MODEL);
           if (foundDefault) {
             chatModelSelect.value = DEFAULT_CHAT_MODEL;
@@ -672,36 +823,34 @@
       try {
         const resp = await fetch("https://api.penguinai.tech/v1/models");
         if (!resp.ok) throw new Error("Image model load failed.");
-      const data = await resp.json();
-    const imageModels = data.data.filter(m => m.type === "images.generations");
+        const data = await resp.json();
+        const imageModels = data.data.filter(m => m.type === "images.generations");
 
-    imageModelSelect.innerHTML = "";
-    imageModels.forEach(m => {
-      const opt = document.createElement('option');
-      opt.value = m.id;
-      opt.textContent = m.id;
-      imageModelSelect.appendChild(opt);
-    });
+        imageModelSelect.innerHTML = "";
+        imageModels.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          opt.textContent = m.id;
+          imageModelSelect.appendChild(opt);
+        });
 
-    // Check if 'flux' is available
-    let defaultImageModel = imageModels.find(i => i.id === "flux")?.id || imageModels[0]?.id;
+        // Example default to "flux" if available
+        let defaultImageModel = imageModels.find(i => i.id === "flux")?.id || imageModels[0]?.id;
 
-    // Load saved image model or default
-    let savedImageModel = localStorage.getItem(IMAGE_MODEL_KEY);
-    if (savedImageModel && imageModels.some(i => i.id === savedImageModel)) {
-      imageModelSelect.value = savedImageModel;
-    } else if (defaultImageModel) {
-      imageModelSelect.value = defaultImageModel;
-      localStorage.setItem(IMAGE_MODEL_KEY, defaultImageModel);
+        // Load saved or default image model
+        let savedImageModel = localStorage.getItem(IMAGE_MODEL_KEY);
+        if (savedImageModel && imageModels.some(i => i.id === savedImageModel)) {
+          imageModelSelect.value = savedImageModel;
+        } else if (defaultImageModel) {
+          imageModelSelect.value = defaultImageModel;
+          localStorage.setItem(IMAGE_MODEL_KEY, defaultImageModel);
+        }
+      } catch (err) {
+        console.error(err);
+        imageModelSelect.innerHTML = '<option value="Failed">Failed</option>';
+      }
     }
-  } catch (err) {
-    console.error(err);
-    imageModelSelect.innerHTML = '<option value="Failed">Failed</option>';
-  }
-}
 
-
-    // Save user’s selection
     chatModelSelect.addEventListener('change', () => {
       localStorage.setItem(CHAT_MODEL_KEY, chatModelSelect.value);
     });
@@ -731,7 +880,7 @@
       if (savedStreamState !== null) {
         streamToggle.checked = savedStreamState;
       } else {
-        streamToggle.checked = true; // Default to enabled
+        streamToggle.checked = true;
         localStorage.setItem(STREAM_ENABLED_KEY, JSON.stringify(true));
       }
     }
@@ -751,7 +900,6 @@
         const bubble = document.createElement('div');
         bubble.classList.add('chat-bubble');
 
-        // Parse Code Snippets
         const parts = parseCodeSnippets(msg.content);
         for (let part of parts) {
           if (part.type === 'text') {
@@ -770,7 +918,7 @@
             let snippetControls = document.createElement('div');
             snippetControls.classList.add('snippet-controls');
 
-            // Copy
+            // Copy button
             let copyBtn = document.createElement('button');
             copyBtn.classList.add('snippet-btn');
             copyBtn.textContent = 'Copy';
@@ -784,7 +932,7 @@
             });
             snippetControls.appendChild(copyBtn);
 
-            // If HTML => open tab
+            // Open in new tab (if detected HTML)
             if (detectLanguage(part.content) === 'html') {
               let openTabBtn = document.createElement('button');
               openTabBtn.classList.add('open-tab-btn');
@@ -809,7 +957,17 @@
         const editBtn = document.createElement('button');
         editBtn.classList.add('edit-delete-btn');
         editBtn.textContent = 'Edit';
-        editBtn.addEventListener('click', () => openEditBox(i, bubble));
+
+        // CHANGED: Different edit flow for mobile vs. desktop
+        editBtn.addEventListener('click', () => {
+          if (isMobile()) {
+            // 1) On mobile, open a prompt
+            openMobileEditPrompt(i);
+          } else {
+            // 2) On desktop, do inline editing
+            openEditBox(i, bubble);
+          }
+        });
 
         const delBtn = document.createElement('button');
         delBtn.classList.add('edit-delete-btn');
@@ -819,13 +977,11 @@
         edContainer.appendChild(editBtn);
         edContainer.appendChild(delBtn);
 
-        // Arrange based on role
+        // Place elements based on role
         if (msg.role === 'user') {
-          // User messages: Bubble first, then buttons (aligned right)
           msgDiv.appendChild(bubble);
           msgDiv.appendChild(edContainer);
         } else {
-          // Assistant messages: Buttons first, then bubble (aligned left)
           msgDiv.appendChild(edContainer);
           msgDiv.appendChild(bubble);
         }
@@ -834,15 +990,34 @@
       }
     }
 
+    /******************************************
+     * MOBILE EDIT PROMPT
+     ******************************************/
+    function openMobileEditPrompt(index) {
+      const existingContent = chatHistory[index].content;
+      const newContent = prompt("Edit your message:", existingContent);
+      if (newContent !== null) {
+        let trimmed = newContent.trim();
+        if (trimmed) {
+          chatHistory[index].content = trimmed;
+          localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatHistory));
+          renderChat();
+        } else {
+          alert("Message cannot be empty.");
+        }
+      }
+    }
+
+    /******************************************
+     * DESKTOP INLINE EDITING
+     ******************************************/
     function openEditBox(index, bubbleEl) {
-      // If there's an existing edit box, remove it first
       const existingBox = bubbleEl.querySelector('.edit-box');
       if (existingBox) {
         bubbleEl.removeChild(existingBox);
         return;
       }
 
-      // Create an edit box
       const editBox = document.createElement('div');
       editBox.classList.add('edit-box');
 
@@ -868,7 +1043,6 @@
       const cancelBtn = document.createElement('button');
       cancelBtn.textContent = 'Cancel';
       cancelBtn.addEventListener('click', () => {
-        // remove the edit box
         bubbleEl.removeChild(editBox);
       });
 
@@ -882,11 +1056,9 @@
     }
 
     function deleteMessage(index) {
-      if (true) {
-        chatHistory.splice(index, 1);
-        localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatHistory));
-        renderChat();
-      }
+      chatHistory.splice(index, 1);
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatHistory));
+      renderChat();
     }
 
     /******************************************
@@ -895,7 +1067,7 @@
     function parseMarkdown(text) {
       if (!text || typeof text !== 'string') return '';
 
-      // # Heading
+      // Headings
       text = text.replace(/^### (.*$)/gim, '<h3>$1</h3>');
       text = text.replace(/^## (.*$)/gim, '<h2>$1</h2>');
       text = text.replace(/^# (.*$)/gim, '<h1>$1</h1>');
@@ -903,7 +1075,7 @@
       // Bold
       text = text.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
 
-      // Lists
+      // Simple lists
       text = text.replace(/^\d+\.\s+(.*)/gm, '<li>$1</li>');
       text = text.replace(/<\/li>\n<li>/g, '</li><li>');
       text = text.replace(/<li>(.*?)<\/li>/gim, '<ol><li>$1</li></ol>');
@@ -940,7 +1112,7 @@
     }
 
     /******************************************
-     * CHAT SENDING / STREAMING
+     * CHAT SENDING
      ******************************************/
     let canSendChat = true;
     let chatCooldownInterval = null;
@@ -972,7 +1144,6 @@
       chatInput.value = '';
       startChatCooldown();
 
-      // Determine if streaming is enabled
       const useStream = streamToggle.checked;
 
       try {
@@ -1021,7 +1192,6 @@
     }
 
     async function fetchChatNoStream(model) {
-      // Build the entire conversation
       const messages = chatHistory.map(m => ({
         role: m.role === 'user' ? 'user' : 'assistant',
         content: m.content,
@@ -1043,14 +1213,12 @@
     }
 
     async function fetchChatStreaming(model) {
-      // Build the entire conversation
       const messages = chatHistory.map(m => ({
         role: m.role === 'user' ? 'user' : 'assistant',
         content: m.content,
       }));
 
-      // Add an empty AI message to receive the stream
-      addChat('ai', ""); 
+      addChat('ai', ""); // placeholder message for streaming
       const aiIndex = chatHistory.length - 1;
 
       const resp = await fetch('https://api.penguinai.tech/v1/chat/completions', {
@@ -1093,7 +1261,7 @@
             }
             if (json.choices?.[0]?.finish_reason === 'stop') return;
           } catch (err) {
-            // Possibly partial / non-JSON chunk
+            // Possibly partial chunk
           }
         }
       }
@@ -1119,7 +1287,7 @@
 
     function renderImages() {
       imageResults.innerHTML = "";
-      cleanupExpiredImages(); // Remove images older than 4 hours
+      cleanupExpiredImages();
       imagesHistory.forEach(img => {
         const imgEl = document.createElement('img');
         imgEl.src = img.url;
@@ -1161,7 +1329,7 @@
         imagesHistory.push({
           url,
           prompt,
-          timestamp: Date.now() // Store creation time for 4-hour expiry
+          timestamp: Date.now()
         });
         localStorage.setItem(IMAGE_STORAGE_KEY, JSON.stringify(imagesHistory));
         renderImages();
@@ -1200,7 +1368,7 @@
 
     /******************************************
      * MODAL
-     *******************************************/
+     ******************************************/
     function openModal(src) {
       if (!src) return;
       modalImage.src = src;
@@ -1227,8 +1395,8 @@
     });
 
     /******************************************
-     * EXPORT / IMPORT HELPERS
-     *******************************************/
+     * EXPORT/IMPORT HELPERS
+     ******************************************/
     function exportChatHistory() {
       const dataStr = JSON.stringify(chatHistory, null, 2);
       const blob = new Blob([dataStr], { type: "application/json" });
