@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Audio Duplicate Checker</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  /* Reset & Base */
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:linear-gradient(145deg,#151c28,#243347);
+    color:#eef3f8;
+    display:flex;flex-direction:column;align-items:center;
+    min-height:100vh;padding:2rem;
+  }
+  h1{font-size:clamp(1.8rem,5vw,2.6rem);margin-bottom:1rem;text-align:center}
+  /* Drop zone */
+  #dropzone{
+    width:clamp(250px,60vw,600px);
+    min-height:200px;
+    border:3px dashed #4da3ff;
+    border-radius:1rem;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    gap:1rem;text-align:center;
+    transition:background .25s,border-color .25s;
+    cursor:pointer;padding:1.5rem;
+  }
+  #dropzone.hover{background:#20304a;border-color:#82c1ff}
+  #dropzone p{color:#cfd9e4}
+  #files{display:none}
+  /* Tables side by side */
+  #tables { display:flex; gap:2rem; margin-top:2rem; flex-wrap:wrap; justify-content:center; width:100%; max-width:900px; }
+  .table-wrapper { flex:1 1 300px; }
+  .table-wrapper h2 { text-align:center; margin-bottom:0.5rem; font-size:1.1rem; }
+  table { width:100%; border-collapse:collapse; background:#1e293b; border-radius:.5rem; overflow:hidden; }
+  th,td{ padding:.75rem 1rem; text-align:left; }
+  thead{ background:#243347 }
+  th{ font-weight:600 }
+  /* Row colors */
+  .duplicate-row td { background:rgba(255,99,99,0.2); }
+  .new-row       td { background:rgba(41,204,122,0.2); }
+  /* Message */
+  #message{ margin-top:1rem; color:#ffc861; font-size:1rem; text-align:center; }
+  /* Footer */
+  footer{ margin-top:auto; font-size:.8rem; color:#8ca0b8 }
+  a{ color:#7ac4ff; text-decoration:none }
+  a:hover{ text-decoration:underline }
+</style>
+</head>
+<body>
+
+<h1>Audio Duplicate Checker</h1>
+
+<label id="dropzone">
+  <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#4da3ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 19V6M5 12l7-7 7 7"/>
+  </svg>
+  <p>Click or drag &amp; drop audio files</p>
+  <input id="files" type="file" accept=".mp3,.m4a,.ogg,.wav" multiple>
+</label>
+
+<p id="message" style="display:none;">Not apart of the extensions.</p>
+
+<div id="tables">
+  <div class="table-wrapper" id="existing">
+    <h2>Existing Files</h2>
+    <table>
+      <thead><tr><th>Uploaded File</th><th>Matches</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="table-wrapper" id="new">
+    <h2>New Files</h2>
+    <table>
+      <thead><tr><th>Uploaded File</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<footer>
+  Powered by SHA-256 • Hash DB:
+  <a href="https://adammady.github.io/apiv2playground/hashes.json" target="_blank" rel="noopener">
+    hashes.json
+  </a>
+</footer>
+
+<script>
+/* Config */
+const HASH_URL  = 'https://adammady.github.io/apiv2playground/hashes.json';
+const VALID_EXT = /\.(mp3|m4a|ogg|wav)$/i;
+
+/* Load known hashes */
+const known = new Map();
+fetch(HASH_URL)
+  .then(r => r.ok ? r.json() : Promise.reject(r.status))
+  .then(obj => { for (const [name, hash] of Object.entries(obj)) known.set(hash, name); })
+  .catch(err => { console.error('Could not load hash DB:', err); alert('⚠️ Duplicate check disabled.'); });
+
+/* Elements */
+const fileInput = document.getElementById('files');
+const message   = document.getElementById('message');
+const existTB   = document.querySelector('#existing tbody');
+const newTB     = document.querySelector('#new tbody');
+
+/* Helpers */
+async function sha256Hex(buffer) {
+  const digest = await crypto.subtle.digest('SHA-256', buffer);
+  return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function clearTables() {
+  existTB.innerHTML = '';
+  newTB.innerHTML   = '';
+  message.style.display = 'none';
+}
+
+function addRow(tableBody, cells, cls) {
+  const tr = document.createElement('tr');
+  tr.classList.add(cls);
+  cells.forEach(text => { const td = document.createElement('td'); td.textContent = text; tr.appendChild(td); });
+  tableBody.appendChild(tr);
+}
+
+/* File handling */
+async function handleFiles(files) {
+  clearTables();
+  const arr   = Array.from(files);
+  const valid = arr.filter(f => VALID_EXT.test(f.name));
+
+  if (valid.length === 0) {
+    if (arr.length > 0) {
+      message.textContent = 'Not apart of the extensions.';
+      message.style.display = '';
+    }
+    return;
+  }
+
+  for (const file of valid) {
+    try {
+      const buf  = await file.arrayBuffer();
+      const hash = await sha256Hex(buf);
+      if (known.has(hash)) {
+        addRow(existTB, [file.name, known.get(hash)], 'duplicate-row');
+      } else {
+        addRow(newTB, [file.name], 'new-row');
+      }
+    } catch {
+      addRow(newTB, [file.name + ' (error)'], 'new-row');
+    }
+  }
+}
+
+/* Events */
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+['dragenter','dragover'].forEach(evt => {
+  document.getElementById('dropzone').addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); document.getElementById('dropzone').classList.add('hover'); });
+});
+['dragleave','drop'].forEach(evt => {
+  document.getElementById('dropzone').addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); document.getElementById('dropzone').classList.remove('hover'); if (evt==='drop') handleFiles(e.dataTransfer.files); });
+});
+
+/* Prevent stray drops from navigating */
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => e.preventDefault());
+</script>
+</body>
+</html>
