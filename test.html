@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Test Page</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+        .question-box {
+            border: 1px solid #ccc;
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .question-main-text-wrapper {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .answer label {
+            display: block; /* Makes labels stack */
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+        .answer input[type="radio"] {
+            margin-right: 8px;
+        }
+        #submit_btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        .question-map {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px dashed #aaa;
+        }
+        .qm-box {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            border: 1px solid black;
+            margin: 5px;
+            font-weight: bold;
+        }
+        .qm-unsolved {
+            background-color: #ffdddd; /* Light red */
+        }
+        .qm-solved {
+            background-color: #ddffdd; /* Light green */
+        }
+        /* Basic style for the added button if needed */
+        #auto_answer_btn {
+            /* Styles are applied by the script, but you could add defaults */
+             margin-bottom: 10px !important;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Sample Quiz</h1>
+
+    <div class="question-map">
+        <strong>Question Map:</strong><br>
+        <div id="qm-box-0" class="qm-box qm-unsolved">1</div>
+        <div id="qm-box-1" class="qm-box qm-unsolved">2</div>
+        <div id="qm-box-2" class="qm-box qm-unsolved">3</div>
+    </div>
+
+    <form action="#" id="submission_from" method="post">
+        <!-- Question 1 -->
+        <div class="question-box" qid="TESTQ001" id="question_0">
+            <div class="question-main-text-wrapper">
+                1. What is the primary color mixed with yellow to make green?
+            </div>
+            <div class="answer">
+                <input type="radio" name="data[Answer][0][text]" id="Answer0Text1" value="1" class="qm_answer">
+                <label for="Answer0Text1" class="control-label">A) Red</label>
+
+                <input type="radio" name="data[Answer][0][text]" id="Answer0Text2" value="2" class="qm_answer">
+                <label for="Answer0Text2" class="control-label">B) Blue</label>
+
+                <input type="radio" name="data[Answer][0][text]" id="Answer0Text3" value="3" class="qm_answer">
+                <label for="Answer0Text3" class="control-label">C) Orange</label>
+
+                <input type="radio" name="data[Answer][0][text]" id="Answer0Text4" value="4" class="qm_answer">
+                <label for="Answer0Text4" class="control-label">D) White</label>
+            </div>
+        </div>
+
+        <!-- Question 2 -->
+        <div class="question-box" qid="TESTQ002" id="question_1">
+            <div class="question-main-text-wrapper">
+                2. Which planet is known as the Red Planet?
+            </div>
+            <div class="answer">
+                <input type="radio" name="data[Answer][1][text]" id="Answer1Text1" value="1" class="qm_answer">
+                <label for="Answer1Text1" class="control-label">A) Earth</label>
+
+                <input type="radio" name="data[Answer][1][text]" id="Answer1Text2" value="2" class="qm_answer">
+                <label for="Answer1Text2" class="control-label">B) Mars</label>
+
+                <input type="radio" name="data[Answer][1][text]" id="Answer1Text3" value="3" class="qm_answer">
+                <label for="Answer1Text3" class="control-label">C) Jupiter</label>
+            </div>
+        </div>
+
+        <!-- Question 3 -->
+        <div class="question-box" qid="TESTQ003" id="question_2">
+            <div class="question-main-text-wrapper">
+                3. What is the value of 2 + 2?
+            </div>
+            <div class="answer">
+                <input type="radio" name="data[Answer][2][text]" id="Answer2Text1" value="1" class="qm_answer">
+                <label for="Answer2Text1" class="control-label">A) 3</label>
+
+                <input type="radio" name="data[Answer][2][text]" id="Answer2Text2" value="2" class="qm_answer">
+                <label for="Answer2Text2" class="control-label">B) 4</label>
+
+                <input type="radio" name="data[Answer][2][text]" id="Answer2Text3" value="3" class="qm_answer">
+                <label for="Answer2Text3" class="control-label">C) 5</label>
+            </div>
+        </div>
+
+        <button id="submit_btn" type="button">Submit Exam</button>
+        <!-- The Auto-Answer button will be inserted here by the script -->
+    </form>
+
+    <script>
+        // Optional: Add a listener to the submit button just to show it was clicked
+        // The bookmarklet doesn't interact with this, it's just for testing the form structure.
+        const submitBtn = document.getElementById('submit_btn');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', function() {
+                alert('Submit button clicked! (Form will not actually submit)');
+            });
+        }
+    </script>
+
+</body>
+</html>
