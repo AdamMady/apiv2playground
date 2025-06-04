@@ -1075,10 +1075,10 @@
       // Bold
       text = text.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
 
-      // Simple lists
+      // Simple ordered lists
       text = text.replace(/^\d+\.\s+(.*)/gm, '<li>$1</li>');
       text = text.replace(/<\/li>\n<li>/g, '</li><li>');
-      text = text.replace(/<li>(.*?)<\/li>/gim, '<ol><li>$1</li></ol>');
+      text = text.replace(/(?:<li>.*?<\/li>)+/g, m => `<ol>${m}</ol>`);
 
       return text.trim();
     }
