@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Text-to-Speech Generator with Presets</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 2em;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background-color: white;
+            padding: 2em;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #4a4a4a;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 1.5em;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5em;
+            font-weight: bold;
+            color: #555;
+        }
+        textarea, select {
+            width: 100%;
+            padding: 0.8em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            background-color: #fff;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        button {
+            width: 100%;
+            padding: 1em;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: white;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover:not(:disabled) {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .status {
+            text-align: center;
+            margin-top: 1em;
+            height: 1.2em;
+            color: #888;
+        }
+        #presets {
+            background-color: #eef7ff;
+            border-color: #007bff;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="form-group">
+        <select id="presets"></select>
+    </div>
+    
+    <div class="form-group">
+        <label for="words">Text to Speak (max 128 characters)</label>
+        <textarea id="words" maxlength="128">hello world</textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="voice">Voice</label>
+        <select id="voice"></select>
+    </div>
+
+    <div class="form-group">
+        <label for="language">Language</label>
+        <select id="language"></select>
+    </div>
+
+    <button id="speakButton">Speak</button>
+    <div id="status" class="status"></div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Preset Data from Files ---
+    const charactersData = `
+Uami Bosim's Son
+Window
+Shoe
+Ethan
+Popcorn
+Ice
+Banana Peel
+Pillow
+Box
+Pizza
+Twin Sunflower`.trim();
+
+    const sexData = `
+3
+4
+2
+2
+2
+2
+1
+1
+1
+1
+1`.trim();
+
+    const languageData = `
+Spanish
+Spanish
+Spanish
+Hindi
+Arabic
+Russian
+French
+German
+Portuguese
+Italian
+Romanian`.trim();
+
+
+    // --- Constants from the Scratch Extension ---
+    const SERVER_HOST = 'https://synthesis-service.scratch.mit.edu';
+    const SERVER_TIMEOUT = 10000;
+    const SPEECH_VOLUME = 2.5; // Web Audio Gain is a multiplier, not percentage. 250% = 2.5
+
+    const ALTO_ID = 'ALTO';
+    const TENOR_ID = 'TENOR';
+    const SQUEAK_ID = 'SQUEAK';
+    const GIANT_ID = 'GIANT';
+    const KITTEN_ID = 'KITTEN';
+    
+    const FEMALE_TENOR_RATE = 0.89;
+    const FEMALE_GIANT_RATE = 0.79;
+
+    const ENGLISH_ID = 'en';
+
+    // Map the "Sex" number from the file to a voice ID. 1-based index.
+    const voiceMap = [ALTO_ID, TENOR_ID, SQUEAK_ID, GIANT_ID, KITTEN_ID];
+
+    const VOICE_INFO = {
+        [ALTO_ID]: { name: 'Alto', gender: 'female', playbackRate: 1 },
+        [TENOR_ID]: { name: 'Tenor', gender: 'male', playbackRate: 1 },
+        [SQUEAK_ID]: { name: 'Squeak', gender: 'female', playbackRate: 1.19 },
+        [GIANT_ID]: { name: 'Giant', gender: 'male', playbackRate: 0.84 },
+        [KITTEN_ID]: { name: 'Kitten', gender: 'female', playbackRate: 1.41 }
+    };
+
+    const LANGUAGE_INFO = {
+        'ar': { name: 'Arabic', speechSynthLocale: 'arb', singleGender: true },
+        'zh-cn': { name: 'Chinese (Mandarin)', speechSynthLocale: 'cmn-CN', singleGender: true },
+        'da': { name: 'Danish', speechSynthLocale: 'da-DK' },
+        'nl': { name: 'Dutch', speechSynthLocale: 'nl-NL' },
+        'en': { name: 'English', speechSynthLocale: 'en-US' },
+        'fr': { name: 'French', speechSynthLocale: 'fr-FR' },
+        'de': { name: 'German', speechSynthLocale: 'de-DE' },
+        'hi': { name: 'Hindi', speechSynthLocale: 'hi-IN', singleGender: true },
+        'is': { name: 'Icelandic', speechSynthLocale: 'is-IS' },
+        'it': { name: 'Italian', speechSynthLocale: 'it-IT' },
+        'ja': { name: 'Japanese', speechSynthLocale: 'ja-JP' },
+        'ko': { name: 'Korean', speechSynthLocale: 'ko-KR', singleGender: true },
+        'nb': { name: 'Norwegian', speechSynthLocale: 'nb-NO', singleGender: true },
+        'pl': { name: 'Polish', speechSynthLocale: 'pl-PL' },
+        'pt-br': { name: 'Portuguese (Brazilian)', speechSynthLocale: 'pt-BR' },
+        'pt': { name: 'Portuguese (European)', speechSynthLocale: 'pt-PT' },
+        'ro': { name: 'Romanian', speechSynthLocale: 'ro-RO', singleGender: true },
+        'ru': { name: 'Russian', speechSynthLocale: 'ru-RU' },
+        'es': { name: 'Spanish (European)', speechSynthLocale: 'es-ES' },
+        'es-419': { name: 'Spanish (Latin American)', speechSynthLocale: 'es-US' },
+        'sv': { name: 'Swedish', speechSynthLocale: 'sv-SE', singleGender: true },
+        'tr': { name: 'Turkish', speechSynthLocale: 'tr-TR', singleGender: true },
+        'cy': { name: 'Welsh', speechSynthLocale: 'cy-GB', singleGender: true }
+    };
+
+    // --- Web Audio Setup ---
+    let audioContext;
+    try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+        alert('Web Audio API is not supported in this browser.');
+    }
+
+    // --- DOM Elements ---
+    const wordsInput = document.getElementById('words');
+    const voiceSelect = document.getElementById('voice');
+    const languageSelect = document.getElementById('language');
+    const speakButton = document.getElementById('speakButton');
+    const statusDiv = document.getElementById('status');
+    const presetsSelect = document.getElementById('presets');
+    
+    let characterPresets = [];
+
+    // --- Parsing and UI Population Functions ---
+    function getLanguageIdByName(name) {
+        const lowerCaseName = name.toLowerCase();
+        for (const id in LANGUAGE_INFO) {
+            if (LANGUAGE_INFO[id].name.toLowerCase().includes(lowerCaseName)) {
+                return id;
+            }
+        }
+        return ENGLISH_ID; // Fallback to English if not found
+    }
+
+    function parseCharacterPresets() {
+        const characters = charactersData.split('\n');
+        const sexes = sexData.split('\n');
+        const languages = languageData.split('\n');
+        
+        if (characters.length !== sexes.length || characters.length !== languages.length) {
+            console.warn("Preset data files have mismatched line counts. Presets may be incomplete.");
+        }
+
+        const count = Math.min(characters.length, sexes.length, languages.length);
+        for (let i = 0; i < count; i++) {
+            const sexIndex = parseInt(sexes[i], 10) - 1;
+            characterPresets.push({
+                name: characters[i],
+                voiceId: voiceMap[sexIndex] || ALTO_ID,
+                languageId: getLanguageIdByName(languages[i]),
+                greeting: `Hello I am ${characters[i]}`
+            });
+        }
+    }
+    
+    function populatePresetsMenu() {
+        const placeholder = document.createElement('option');
+        placeholder.value = "";
+        placeholder.textContent = "— Select a Character —";
+        presetsSelect.appendChild(placeholder);
+
+        characterPresets.forEach((preset, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = preset.name;
+            presetsSelect.appendChild(option);
+        });
+    }
+
+    function populateVoiceMenu() {
+        Object.keys(VOICE_INFO).forEach(voiceId => {
+            const option = document.createElement('option');
+            option.value = voiceId;
+            option.textContent = VOICE_INFO[voiceId].name;
+            voiceSelect.appendChild(option);
+        });
+    }
+
+    function populateLanguageMenu() {
+        Object.keys(LANGUAGE_INFO).forEach(langId => {
+            const option = document.createElement('option');
+            option.value = langId;
+            option.textContent = LANGUAGE_INFO[langId].name;
+            languageSelect.appendChild(option);
+        });
+        languageSelect.value = ENGLISH_ID;
+    }
+
+    function applyPreset() {
+        const selectedIndex = presetsSelect.value;
+        if (selectedIndex === "") {
+            // Reset to defaults if placeholder is selected
+            wordsInput.value = "hello world";
+            voiceSelect.value = ALTO_ID;
+            languageSelect.value = ENGLISH_ID;
+            return;
+        }
+
+        const preset = characterPresets[selectedIndex];
+        if (preset) {
+            wordsInput.value = preset.greeting;
+            voiceSelect.value = preset.voiceId;
+            languageSelect.value = preset.languageId;
+        }
+    }
+
+
+    // --- Core Speak Function ---
+    async function speak() {
+        if (!audioContext || audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+
+        speakButton.disabled = true;
+        statusDiv.textContent = 'Synthesizing...';
+
+        let words = wordsInput.value.trim();
+        const voiceId = voiceSelect.value;
+        const languageId = languageSelect.value;
+        
+        if (!words) {
+            statusDiv.textContent = 'Please enter some text.';
+            speakButton.disabled = false;
+            return;
+        }
+
+        let locale = LANGUAGE_INFO[languageId].speechSynthLocale;
+        let gender = VOICE_INFO[voiceId].gender;
+        let playbackRate = VOICE_INFO[voiceId].playbackRate;
+
+        if (voiceId === KITTEN_ID) {
+            words = words.replace(/\S+/g, 'meow');
+            locale = LANGUAGE_INFO[ENGLISH_ID].speechSynthLocale;
+        }
+        if (LANGUAGE_INFO[languageId].singleGender) {
+            gender = 'female';
+            if (voiceId === TENOR_ID) playbackRate = FEMALE_TENOR_RATE;
+            if (voiceId === GIANT_ID) playbackRate = FEMALE_GIANT_RATE;
+        }
+
+        const path = `${SERVER_HOST}/synth?locale=${locale}&gender=${gender}&text=${encodeURIComponent(words)}`;
+        
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), SERVER_TIMEOUT);
+
+            const response = await fetch(path, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            if (!response.ok) throw new Error(`Server returned status ${response.status}`);
+
+            statusDiv.textContent = 'Decoding audio...';
+            const audioBuffer = await response.arrayBuffer();
+            const decodedBuffer = await audioContext.decodeAudioData(audioBuffer);
+
+            const source = audioContext.createBufferSource();
+            source.buffer = decodedBuffer;
+            source.playbackRate.value = playbackRate;
+
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = SPEECH_VOLUME;
+
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            statusDiv.textContent = 'Playing...';
+            source.start(0);
+
+            source.onended = () => {
+                statusDiv.textContent = '';
+                speakButton.disabled = false;
+            };
+
+        } catch (error) {
+            console.error('Text-to-Speech Error:', error);
+            statusDiv.textContent = `Error: ${error.message}`;
+            speakButton.disabled = false;
+        }
+    }
+
+    // --- Initialization ---
+    parseCharacterPresets();
+    populatePresetsMenu();
+    populateVoiceMenu();
+    populateLanguageMenu();
+    speakButton.addEventListener('click', speak);
+    presetsSelect.addEventListener('change', applyPreset);
+});
+</script>
+
+</body>
+</html>
