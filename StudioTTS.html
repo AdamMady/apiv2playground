@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Crafting Studio</title>
+    <!-- Include the LAME MP3 Encoder library -->
+    <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #1a1d21;
+            --panel-bg-color: #25282d;
+            --border-color: #3a3f47;
+            --text-color: #e0e0e0;
+            --text-color-secondary: #9a9ea4;
+            --accent-color: #007bff;
+            --accent-color-hover: #0056b3;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --warning-color: #ffc107;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 2em;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .studio-container {
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2em;
+            height: calc(100vh - 4em);
+        }
+
+        .controls-panel, .output-panel {
+            background-color: var(--panel-bg-color);
+            padding: 2em;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5em;
+            overflow: hidden;
+        }
+        
+        .controls-panel {
+            overflow-y: auto;
+        }
+
+        h2 {
+            margin-top: 0;
+            margin-bottom: 0;
+            padding-bottom: 0.5em;
+            font-weight: 600;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5em;
+        }
+
+        label {
+            font-weight: 500;
+            color: var(--text-color-secondary);
+        }
+
+        textarea, select, input[type="number"] {
+            width: 100%;
+            padding: 0.8em;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        input[type="number"] {
+             font-family: monospace;
+        }
+
+        textarea:focus, select:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .header-controls {
+            display: flex;
+            gap: 0.75em;
+            align-items: center;
+        }
+        .header-controls .form-group {
+            flex-grow: 1;
+        }
+
+        .button, .button-secondary, .button-warning {
+            padding: 0.8em 1.2em;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            text-align: center;
+            white-space: nowrap;
+            height: fit-content;
+        }
+        
+        .button-secondary { background-color: #495057; }
+        .button-secondary:hover { background-color: #5a6268; }
+        
+        .button-warning { background-color: var(--warning-color); color: #1a1d21; }
+        .button-warning:hover { background-color: #e0a800; }
+
+        .voice-editor {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5em;
+        }
+
+        .emotion-tabs {
+            display: flex; flex-wrap: wrap; gap: 0.5em; margin-bottom: 1.5em;
+            border-bottom: 1px solid var(--border-color); padding-bottom: 1em;
+        }
+
+        .emotion-tab {
+            background-color: transparent; border: 1px solid var(--border-color); color: var(--text-color-secondary);
+            padding: 0.5em 1em; border-radius: 20px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s ease;
+        }
+        .emotion-tab:hover { background-color: var(--border-color); color: var(--text-color); }
+        .emotion-tab.active { background-color: var(--accent-color); border-color: var(--accent-color); color: white; font-weight: 600; }
+        
+        /* Compact per-emotion settings */
+        .emotion-specific-settings {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1em;
+            margin-bottom: 1.5em;
+        }
+        .emotion-number-inputs {
+             display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1em;
+        }
+       
+        /* Output Panel */
+        .output-header {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5em;
+        }
+
+        #generateButton {
+            width: 100%; padding: 1em; font-size: 1.2rem; font-weight: bold; background-color: #28a745; transition: all 0.2s;
+        }
+        #generateButton:hover:not(:disabled) { background-color: #218838; }
+        #generateButton:disabled { background-color: #555; color: #999; cursor: not-allowed; }
+
+        #status {
+            text-align: center; color: var(--text-color-secondary); min-height: 24px;
+            display: flex; align-items: center; justify-content: center; gap: 0.5em; margin-top: 1em;
+        }
+        
+        .spinner { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        #audio-history-list {
+            flex-grow: 1; overflow-y: auto; padding-right: 1em;
+            display: flex; flex-direction: column; gap: 1.5em;
+        }
+        
+        .history-item {
+            background-color: var(--bg-color); padding: 1em; border-radius: 8px;
+            border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 1em;
+        }
+        .history-item h4 { margin: 0; font-weight: 500; }
+        .history-item audio { width: 100%; }
+        .history-item-actions { display: flex; gap: 1em; align-items: center; }
+        .history-item-actions .download-link { color: var(--accent-color); text-decoration: none; font-weight: 500; font-size: 0.9rem; }
+        .history-item-actions .download-link:hover { text-decoration: underline; }
+
+        @media (max-width: 900px) {
+            body { height: auto; }
+            .studio-container { grid-template-columns: 1fr; height: auto; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="studio-container">
+    <div class="controls-panel">
+        <div class="header-controls">
+            <div class="form-group">
+                <label for="presetSelect">Load Preset</label>
+                <select id="presetSelect"></select>
+            </div>
+            <button id="saveButton" class="button-secondary">Save JSON</button>
+            <button id="loadButton" class="button-secondary">Load JSON</button>
+            <input type="file" id="fileInput" accept=".json" style="display: none;">
+        </div>
+        
+        <div class="form-group">
+            <label for="textInput">Text to Synthesize</label>
+            <textarea id="textInput">Hello world</textarea>
+        </div>
+        
+        <div class="voice-editor">
+             <div id="emotionTabs" class="emotion-tabs"></div>
+             
+             <div class="emotion-specific-settings">
+                <div class="form-group">
+                    <label for="emotionGenderSelect">Gender</label>
+                    <select id="emotionGenderSelect"></select>
+                </div>
+                 <div class="form-group">
+                    <label for="emotionLanguageSelect">Language</label>
+                    <select id="emotionLanguageSelect"></select>
+                </div>
+             </div>
+            
+             <div class="emotion-number-inputs">
+                 <div class="form-group">
+                     <label for="pitchInput">Pitch / Speed</label>
+                     <input type="number" id="pitchInput" min="0.5" max="2.0" step="0.01">
+                 </div>
+                 <div class="form-group">
+                     <label for="volumeInput">Volume</label>
+                     <input type="number" id="volumeInput" min="0.0" max="5.0" step="0.1">
+                 </div>
+             </div>
+        </div>
+    </div>
+
+    <div class="output-panel">
+        <div class="output-header">
+            <h2>Output</h2>
+            <button id="generateButton" class="button">Generate Audio</button>
+            <div id="status">Ready.</div>
+        </div>
+        <div id="audio-history-list">
+            <!-- Generated audio clips will appear here -->
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Constants & Data ---
+    const SERVER_HOST = 'https://synthesis-service.scratch.mit.edu';
+    const EMOTIONS = ['Normal', 'Angry', 'Depressed', 'Drunk', 'Happy', 'Horny', 'Overjoyed', 'Sad', 'Traumatized'];
+    
+    // --- DOM Elements ---
+    const dom = {
+        presetSelect: document.getElementById('presetSelect'), textInput: document.getElementById('textInput'),
+        emotionGenderSelect: document.getElementById('emotionGenderSelect'), 
+        emotionLanguageSelect: document.getElementById('emotionLanguageSelect'), 
+        emotionTabs: document.getElementById('emotionTabs'),
+        pitchInput: document.getElementById('pitchInput'),
+        volumeInput: document.getElementById('volumeInput'),
+        generateButton: document.getElementById('generateButton'), status: document.getElementById('status'),
+        audioHistoryList: document.getElementById('audio-history-list'), saveButton: document.getElementById('saveButton'),
+        loadButton: document.getElementById('loadButton'), fileInput: document.getElementById('fileInput'),
+    };
+    
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // --- State Management ---
+    let state = {};
+    let generationCounter = 1;
+    let isDirty = false;
+
+    // --- Accurate Preset Definitions ---
+    const LANGUAGE_INFO = {'ar':{name:'Arabic',speechSynthLocale:'arb',singleGender:true},'zh-cn':{name:'Chinese (Mandarin)',speechSynthLocale:'cmn-CN',singleGender:true},'da':{name:'Danish',speechSynthLocale:'da-DK'},'nl':{name:'Dutch',speechSynthLocale:'nl-NL'},'en':{name:'English',speechSynthLocale:'en-US'},'fr':{name:'French',speechSynthLocale:'fr-FR'},'de':{name:'German',speechSynthLocale:'de-DE'},'hi':{name:'Hindi',speechSynthLocale:'hi-IN',singleGender:true},'is':{name:'Icelandic',speechSynthLocale:'is-IS'},'it':{name:'Italian',speechSynthLocale:'it-IT'},'ja':{name:'Japanese',speechSynthLocale:'ja-JP'},'ko':{name:'Korean',speechSynthLocale:'ko-KR',singleGender:true},'nb':{name:'Norwegian',speechSynthLocale:'nb-NO',singleGender:true},'pl':{name:'Polish',speechSynthLocale:'pl-PL'},'pt-br':{name:'Portuguese (Brazilian)',speechSynthLocale:'pt-BR'},'pt':{name:'Portuguese (European)',speechSynthLocale:'pt-PT'},'ro':{name:'Romanian',speechSynthLocale:'ro-RO',singleGender:true},'ru':{name:'Russian',speechSynthLocale:'ru-RU'},'es':{name:'Spanish (European)',speechSynthLocale:'es-ES'},'es-419':{name:'Spanish (Latin American)',speechSynthLocale:'es-US'},'sv':{name:'Swedish',speechSynthLocale:'sv-SE',singleGender:true},'tr':{name:'Turkish',speechSynthLocale:'tr-TR',singleGender:true},'cy':{name:'Welsh',speechSynthLocale:'cy-GB',singleGender:true}};
+    const getLanguageIdByName = (name) => {
+        const lowerName = name.toLowerCase();
+        for (const id in LANGUAGE_INFO) if (LANGUAGE_INFO[id].name.toLowerCase().includes(lowerName)) return id;
+        return 'en';
+    };
+
+    const PRESETS = {};
+    const buildPresets = () => {
+        const basePresets = {
+            'alto':   { name: 'Alto',   gender: 'female', playbackRate: 1.0,  languageId: 'en' },
+            'tenor':  { name: 'Tenor',  gender: 'male',   playbackRate: 1.0,  languageId: 'en' },
+            'squeak': { name: 'Squeak', gender: 'female', playbackRate: 1.19, languageId: 'en' },
+            'giant':  { name: 'Giant',  gender: 'male',   playbackRate: 0.84, languageId: 'en' },
+        };
+        Object.assign(PRESETS, basePresets);
+
+        const charactersData = {
+            'uami-bosim-son': { name: 'Uami Bosim Son', sex: '3', lang: 'Spanish' },
+            'window': { name: 'Window', sex: '4', lang: 'Spanish' },
+            'twin-sunflower': { name: 'Twin Sunflower', sex: '1', lang: 'Romanian' }
+        };
+        const voiceMap = ['alto', 'tenor', 'squeak', 'giant'];
+        
+        for (const key in charactersData) {
+            const char = charactersData[key];
+            const voiceType = voiceMap[parseInt(char.sex, 10) - 1] || 'alto';
+            const originalPreset = PRESETS[voiceType];
+            PRESETS[key] = { ...originalPreset, name: char.name, languageId: getLanguageIdByName(char.lang) };
+        }
+    };
+
+    // --- Core Functions ---
+    function initialize() {
+        buildPresets();
+        populateDropdowns();
+        createEmotionTabs();
+        loadPreset('alto');
+        bindEvents();
+    }
+    
+    function populateDropdowns() {
+        dom.presetSelect.innerHTML = '<option value="custom">Custom (Current Settings)</option>';
+        const presetCategories = {
+            "Standard Voices": ['alto', 'tenor', 'squeak', 'giant'],
+            "Character Voices": ['uami-bosim-son', 'window', 'twin-sunflower']
+        };
+        for (const category in presetCategories) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = category;
+            presetCategories[category].forEach(key => optgroup.appendChild(new Option(PRESETS[key].name, key)));
+            dom.presetSelect.appendChild(optgroup);
+        }
+
+        dom.emotionGenderSelect.innerHTML = `<option value="female">Female</option><option value="male">Male</option>`;
+        Object.keys(LANGUAGE_INFO).forEach(id => dom.emotionLanguageSelect.add(new Option(LANGUAGE_INFO[id].name, id)));
+    }
+
+    function createEmotionTabs() {
+        EMOTIONS.forEach(emotion => {
+            const tab = document.createElement('button');
+            tab.className = 'emotion-tab';
+            tab.textContent = emotion;
+            tab.dataset.emotion = emotion;
+            tab.addEventListener('click', () => { state.activeEmotion = emotion; updateUI(); });
+            dom.emotionTabs.appendChild(tab);
+        });
+    }
+
+    function loadPreset(key) {
+        if (key === 'custom') {
+            // Don't reload, just ensure the dropdown reflects the custom state
+            dom.presetSelect.value = 'custom';
+            return;
+        }
+
+        const presetData = PRESETS[key] || PRESETS['alto'];
+        const newEmotions = {};
+        const baseSettings = {
+            gender: presetData.gender,
+            languageId: presetData.languageId,
+            pitch: presetData.playbackRate,
+            volume: 2.0,
+        };
+        EMOTIONS.forEach(emotion => newEmotions[emotion] = JSON.parse(JSON.stringify(baseSettings)));
+        
+        state = { 
+            ...state, 
+            emotions: newEmotions, 
+            activeEmotion: state.activeEmotion || 'Normal'
+        };
+
+        state.customPreset = JSON.parse(JSON.stringify(state));
+        dom.textInput.value = `Hello, I am ${presetData.name}.`;
+        state.text = dom.textInput.value;
+        
+        isDirty = true;
+        updateUI();
+    }
+    
+    function updateUI() {
+        if (state.text) dom.textInput.value = state.text;
+        
+        document.querySelectorAll('.emotion-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.emotion === state.activeEmotion));
+        
+        const emotionSettings = state.emotions[state.activeEmotion];
+        if (emotionSettings) {
+            dom.emotionGenderSelect.value = emotionSettings.gender;
+            dom.emotionLanguageSelect.value = emotionSettings.languageId;
+            dom.pitchInput.value = emotionSettings.pitch.toFixed(2);
+            dom.volumeInput.value = emotionSettings.volume.toFixed(1);
+        }
+    }
+
+    function handleSettingChange() {
+        if (dom.presetSelect.value !== 'custom') dom.presetSelect.value = 'custom';
+        
+        const activeEmotionSettings = state.emotions[state.activeEmotion];
+        activeEmotionSettings.gender = dom.emotionGenderSelect.value;
+        activeEmotionSettings.languageId = dom.emotionLanguageSelect.value;
+        activeEmotionSettings.pitch = parseFloat(dom.pitchInput.value);
+        activeEmotionSettings.volume = parseFloat(dom.volumeInput.value);
+        state.text = dom.textInput.value;
+        
+        state.customPreset = JSON.parse(JSON.stringify(state));
+        isDirty = true;
+        updateUI();
+    }
+
+    function bindEvents() {
+        dom.presetSelect.addEventListener('change', (e) => loadPreset(e.target.value));
+        [dom.textInput, dom.emotionGenderSelect, dom.emotionLanguageSelect, dom.pitchInput, dom.volumeInput].forEach(el => {
+            el.addEventListener('input', handleSettingChange);
+        });
+        dom.generateButton.addEventListener('click', generateSpeech);
+        dom.saveButton.addEventListener('click', saveSettings);
+        dom.loadButton.addEventListener('click', () => dom.fileInput.click());
+        dom.fileInput.addEventListener('change', loadSettings);
+        window.addEventListener('beforeunload', (e) => { if (isDirty) { e.preventDefault(); e.returnValue = ''; } });
+    }
+
+    // --- Audio Generation (Unaltered Original Engine) ---
+    const chunkText = (t) => { const l=128;if(t.length<=l)return[t];const n=[],s=t.split(" ");let e="";for(const a of s)e.length+a.length+1>l?(n.push(e.trim()),e=a):e+=` ${a}`;return e&&n.push(e.trim()),n.filter((t=>t.length>0))};
+    const setStatus = (text, showSpinner = false) => { dom.status.innerHTML=text;if(showSpinner){dom.status.innerHTML+=`<svg class="spinner" width="20px" height="20px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path opacity="0.2" fill-rule="evenodd" clip-rule="evenodd" d="M12 19C15.866 19 19 15.866 19 12C19 8.13401 15.866 5 12 5C8.13401 5 5 8.13401 5 12C5 15.866 8.13401 19 12 19ZM12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" fill="#e0e0e0"/><path d="M2 12C2 6.47715 6.47715 2 12 2V5C8.13401 5 5 8.13401 5 12H2Z" fill="${getComputedStyle(document.documentElement).getPropertyValue('--accent-color')}"/></svg>`;}};
+
+    function playLiveAudio(decodedAudioBuffers, volume) {
+        return new Promise(resolve => {
+            let playbackTime = audioContext.currentTime;
+            if (decodedAudioBuffers.length === 0) return resolve();
+            for(let i = 0; i < decodedAudioBuffers.length; i++){
+                const { buffer: t, rate: n } = decodedAudioBuffers[i];
+                const s = audioContext.createBufferSource();
+                s.buffer = t;
+                s.playbackRate.value = n;
+                const e = audioContext.createGain();
+                e.gain.value = volume;
+                s.connect(e).connect(audioContext.destination);
+                s.start(playbackTime);
+                playbackTime += t.duration / n;
+                if (i === decodedAudioBuffers.length - 1) s.onended = () => resolve();
+            }
+        });
+    }
+    
+    async function prepareDownload(decodedAudioBuffers, volume) {
+        let totalDuration = 0;
+        decodedAudioBuffers.forEach((({buffer:t,rate:n}) => totalDuration += t.duration/n));
+        if (totalDuration === 0) return new Blob();
+        const offlineCtx = new OfflineAudioContext(1, audioContext.sampleRate * totalDuration, audioContext.sampleRate);
+        const gainNode = offlineCtx.createGain();
+        gainNode.gain.value = volume;
+        gainNode.connect(offlineCtx.destination);
+        let currentTime=0;
+        for(const {buffer: t, rate: n} of decodedAudioBuffers){
+            const s = offlineCtx.createBufferSource();
+            s.buffer = t;
+            s.playbackRate.value = n;
+            s.connect(gainNode);
+            s.start(currentTime);
+            currentTime += t.duration / n;
+        }
+        const renderedBuffer = await offlineCtx.startRendering();
+        const mp3Encoder = new lamejs.Mp3Encoder(1, renderedBuffer.sampleRate, 128);
+        const pcmData = renderedBuffer.getChannelData(0);
+        const samples = new Int16Array(pcmData.length);
+        for(let t=0; t<pcmData.length; t++) samples[t] = 32767.5 * pcmData[t];
+        const mp3Data = []; const bufferSize = 1152;
+        for(let t=0; t<samples.length; t+=bufferSize){
+            const n = samples.subarray(t, t+bufferSize);
+            const s = mp3Encoder.encodeBuffer(n);
+            if(s.length > 0) mp3Data.push(s);
+        }
+        const flushed = mp3Encoder.flush();
+        if(flushed.length > 0) mp3Data.push(flushed);
+        return new Blob(mp3Data, {type:"audio/mpeg"});
+    }
+
+    async function generateSpeech() {
+        if (audioContext.state === 'suspended') await audioContext.resume();
+        dom.generateButton.disabled = true;
+        setStatus('Processing...', true);
+
+        const settingsSnapshot = JSON.parse(JSON.stringify({ ...state, text: dom.textInput.value }));
+        const emotionSettings = settingsSnapshot.emotions[settingsSnapshot.activeEmotion];
+        const textToSpeak = settingsSnapshot.text.trim();
+        if (!textToSpeak) {
+            setStatus('Please enter some text.', false); dom.generateButton.disabled = false; return;
+        }
+
+        try {
+            const textChunks = chunkText(textToSpeak);
+            const decodedAudioBuffers = [];
+
+            for (let i = 0; i < textChunks.length; i++) {
+                setStatus(`Synthesizing chunk ${i + 1}/${textChunks.length}...`, true);
+                const langInfo = LANGUAGE_INFO[emotionSettings.languageId];
+                let gender = emotionSettings.gender;
+                if (langInfo.singleGender) gender = 'female';
+                
+                const path = `${SERVER_HOST}/synth?locale=${langInfo.speechSynthLocale}&gender=${gender}&text=${encodeURIComponent(textChunks[i])}`;
+                const response = await fetch(path);
+                if (!response.ok) throw new Error(`Server error on chunk ${i + 1}`);
+                const decodedBuffer = await audioContext.decodeAudioData(await response.arrayBuffer());
+                decodedAudioBuffers.push({buffer: decodedBuffer, rate: emotionSettings.pitch});
+            }
+
+            setStatus('Playing...', true);
+            const playbackPromise = playLiveAudio(decodedAudioBuffers, emotionSettings.volume);
+            const downloadPromise = prepareDownload(decodedAudioBuffers, emotionSettings.volume);
+            const [, mp3Blob] = await Promise.all([playbackPromise, downloadPromise]);
+
+            addAudioToHistory(mp3Blob, settingsSnapshot);
+            setStatus('Ready.', false);
+
+        } catch (error) {
+            console.error('TTS Error:', error);
+            setStatus(`Error: ${error.message}`, false);
+        } finally {
+            dom.generateButton.disabled = false;
+        }
+    }
+    
+    function addAudioToHistory(mp3Blob, settingsSnapshot) {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.dataset.settings = JSON.stringify(settingsSnapshot);
+        const title = document.createElement('h4');
+        title.textContent = `Generation #${generationCounter++}`;
+        const audioUrl = URL.createObjectURL(mp3Blob);
+        const audio = document.createElement('audio');
+        audio.controls = true; audio.src = audioUrl;
+        const actions = document.createElement('div');
+        actions.className = 'history-item-actions';
+        const revertButton = document.createElement('button');
+        revertButton.className = 'button-warning';
+        revertButton.textContent = 'Revert to these Settings';
+        revertButton.addEventListener('click', (e) => {
+            if (confirm("Are you sure? This will replace your current unsaved settings.\n\nConsider saving your current work to a JSON file first.")) {
+                const historyState = JSON.parse(e.target.closest('.history-item').dataset.settings);
+                state = historyState;
+                state.customPreset = state; 
+                dom.presetSelect.value = 'custom';
+                isDirty = true;
+                updateUI();
+            }
+        });
+        const downloadLink = document.createElement('a');
+        downloadLink.className = 'download-link';
+        downloadLink.href = audioUrl;
+        downloadLink.download = `speech_${generationCounter - 1}.mp3`;
+        downloadLink.textContent = 'Download MP3';
+        actions.append(revertButton, downloadLink);
+        item.append(title, audio, actions);
+        dom.audioHistoryList.prepend(item);
+    }
+    
+    function saveSettings() {
+        const settingsToSave = { ...state, text: dom.textInput.value };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(settingsToSave, null, 2));
+        const a = document.createElement('a');
+        a.href = dataStr; a.download = "voice-settings.json"; a.click();
+        isDirty = false; // Mark as saved
+    }
+
+    function loadSettings(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const loadedState = JSON.parse(e.target.result);
+                state = loadedState;
+                dom.presetSelect.value = 'custom';
+                updateUI();
+                dom.audioHistoryList.innerHTML = ''; generationCounter = 1;
+                setStatus('Settings loaded successfully.', false);
+                isDirty = false;
+            } catch (error) {
+                setStatus('Error: Could not parse JSON file.', false);
+                console.error("Failed to load settings:", error);
+            } finally {
+                event.target.value = null;
+            }
+        };
+        reader.readAsText(file);
+    }
+    
+    // --- Let's Go! ---
+    initialize();
+});
+</script>
+
+</body>
+</html>
